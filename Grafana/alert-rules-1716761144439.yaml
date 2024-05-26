@@ -1,0 +1,141 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: 5-minutes
+      folder: Nginx App
+      interval: 5m
+      rules:
+        - uid: fdmwgju3rskxsf
+          title: ContainerHighCpuUtilization
+          condition: A
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: (sum by (pod, container) (rate(container_cpu_usage_seconds_total{container!=""}[5m])) / sum by (pod, container) (kube_pod_container_resource_requests{resource="cpu", unit="core"}) * 100) > 80
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+          noDataState: NoData
+          execErrState: Error
+          for: 0s
+          annotations:
+            summary: Container High CPU utilization.
+          labels:
+            severity: warning
+          isPaused: false
+        - uid: edmwkq2kao35sd
+          title: NginxRequestsOver20Percent
+          condition: A
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: ((rate(nginx_http_requests_total[5m]) - rate(nginx_http_requests_total[1m] offset 5m)) / rate(nginx_http_requests_total[1m] offset 1m)) * 100 > 20
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+          noDataState: NoData
+          execErrState: Error
+          for: 0s
+          annotations:
+            summary: Nginx requests increased over 20% from last recorded value.
+          labels:
+            severity: warning
+          isPaused: false
+        - uid: cdmwl8ijsi7swa
+          title: ContainerAbsent
+          condition: A
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: absent(container_last_seen)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+          noDataState: NoData
+          execErrState: Error
+          for: 0s
+          annotations:
+            summary: Container has been absent for more than 5 minutes.
+          labels:
+            severity: warning
+          isPaused: false
+        - uid: admwpfq75dv5se
+          title: NodeCPUHighUsage
+          condition: A
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                disableTextWrap: false
+                editorMode: code
+                expr: sum without (mode) (avg without (cpu) (rate(node_cpu_seconds_total{job="node-exporter",mode!="idle"}[2m]))) * 100 > 60
+                fullMetaSearch: false
+                includeNullMetadata: true
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+                useBackend: false
+          noDataState: NoData
+          execErrState: Error
+          for: 0s
+          annotations:
+            summary: High node CPU usage.
+          labels:
+            severity: warning
+          isPaused: false
+        - uid: cdmwpoenf5ds0c
+          title: KubernetesNodeNotReady
+          condition: A
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+          noDataState: NoData
+          execErrState: Error
+          for: 0s
+          annotations:
+            summary: Kubernetes Node not ready.
+          labels:
+            severity: critical
+          isPaused: false

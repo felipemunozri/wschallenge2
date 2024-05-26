@@ -4,7 +4,7 @@ metadata:
   name: nginx-monitor
   namespace: nginx-app
   labels:
-    prometheus: main
+    release: prometheus
 spec:
   namespaceSelector:
     matchNames:
