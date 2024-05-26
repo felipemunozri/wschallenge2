@@ -1,0 +1,72 @@
+-- Kind Cluster
+
+kind create cluster --config kind/kind-config.yml
+
+-- Prometheus Operator
+
+***
+NOTA: ARCHIVOS QUE ESPECIFICAN AL NAMESPACE "MONITORING"
+prometheus-operator/deployment/0-service-account.yaml
+prometheus-operator/deployment/2-cluster-role-binding.yaml -> pero en seccion subjects!!!
+prometheus-operator/deployment/3-deployment.yaml
+***
+
+kubectl apply -f ./prometheus-operator/namespace.yaml - DONE!
+
+kubectl apply --server-side -f ./prometheus-operator/crds - DONE!
+
+kubectl apply -f ./prometheus-operator/rbac - DONE!
+
+kubectl apply -f ./prometheus-operator/deployment - DONE! 
+
+EL ÚLTIMO COMANDO DESPLIEGA AL PROMETHEUS OPERATOR (O SERVER)
+
+-- Prometheus
+
+***
+NOTA: ARCHIVOS QUE ESPECIFICAN AL NAMESPACE "MONITORING"
+prometheus/0-service-account.yaml
+prometheus/2-cluster-role-binding.yaml -> pero en seccion subjects!!!
+prometheus/3-prometheus.yaml
+***
+
+kubectl apply -f ./prometheus/ - DONE! 
+
+EL COMANDO ANTERIOR CREA EL SERVICE ACCOUNT, CLUSTER ROLE, ROLE BINDING, Y EL DEPLOYMENT (fichero 3-prometheus.yaml) PARA LA NUEVA INSTANCIA DE PROMETHEUS QUE SERÁ LA QUE UTILICEMOS PARA HACER SCRAPPING. EN EL FICHERO DEL DEPLOYMENT SE ESPECIFICA COMO SE HARÁ EL MATCH CON LOS rules, podMonitors, serviceMonitors Y probes.
+
+TAMBIÉN SE CREA UN SERVICE QUE EXPONE A LA NUEVA INSTANCIA DE PROMETHEUS.
+
+kubectl port-forward svc/prometheus-operated 9090 -n monitoring   
+
+-- Nginx App
+
+***
+NOTAS:
+EL NAMESPACE DEBE TENER LA ETIQUETA monitoring: prometheus PARA QUE LA INSTANCIA DE PROMETHEUS LO PUEDA VER
+EL SERVICE MONITOR DEBE TENER LA ETIQUETA prometheus: main PARA QUE LA INSTANCIA DE PROMETHEUS LO PUEDA VER. ADEMÁS, DEBE ESPECIFICAR UN NAMESPACE SELECTOR PARA PODER VER A ALGUN NAMESPACE, Y UNA ETIQUETA DE SELECCION PARA PODER VER A UN SERVICE DENTRO DE ESE NAMESPACE
+***
+
+kubectl apply -f ./app/namespace.yaml - DONE!
+
+kubectl apply -f ./app/nginx.yaml -n nginx-app - DONE!
+
+kubectl port-forward svc/nginx 18080:80 -n nginx-app
+
+kubectl apply -f ./app/service-monitor.yaml -n nginx-app - DONE!
+
+EL ÚLTIMO COMANDO CREA AL SERVICE MONITOR Y SI TODO SALE BIEN LA INSTANCIA DE PROMETHEUS DEBERIA DETECTAR UN NUEVO TRAGET PARA HACER SCRAPPING
+
+-- Grafana
+
+helm install grafana grafana/grafana -n monitoring
+
+kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+Wy0SJQjD7aL7V4V8x4d26DnNZWBoIKRazUwN0Lvy -> admin
+
+kubectl port-forward service/grafana 3000:80 -n monitoring
+
+CONFIGURAMOS A PROMETHEUS COMO DATASOURCE CON LA URL http://prometheus-operated.monitoring.svc.cluster.local:9090/
+
+-- Kube State Metrics
+
