@@ -1,4 +1,4 @@
-# Whistestack Challenge 2
+# Whitestack Challenge 2
 
 ## Crear Kind Cluster (3 nodos)
 
